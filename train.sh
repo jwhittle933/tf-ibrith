@@ -1,4 +1,6 @@
 #bin/bash
+sh ./setup.sh
+
 NOW=$(date +"%m-%d-%Y|%T")
 python src/retrain.py \
        --image_dir src/modules \
