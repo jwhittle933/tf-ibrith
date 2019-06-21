@@ -13,6 +13,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"golang.org/x/image/colornames"
 	"golang.org/x/image/font"
@@ -147,20 +148,28 @@ func AddLabel(img *image.RGBA, x, y, class int, label string) {
 }
 
 func main() {
-	modeldir := flag.String("dir", "", "Directory containing tranined model files.")
+
+	now := time.Now()
+	year, month, day := now.Date()
+	hour, min, sec := now.Clock()
+
+	outputfile := fmt.Sprintf("%v-%v-%v|%v:%v:%v.jpg", month, day, year, hour, min, sec)
+
+	modeldir := "src/saved_models"
+	filename := flag.String("dir", "", "Filename in date format.")
 	jpgfile := flag.String("jpg", "", "Path to a JPG image used for input")
-	outjpg := flag.String("out", "", "Path of output JPG for displaying labels")
-	labelfile := flag.String("labels", "labels.txt", "Path to file of labels, one per line")
+	outjpg := flag.String("out", outputfile, "Path of output JPG for displaying labels. Default is month-day-year|hour:min:sec.jpg")
+	labelfile := flag.String("labels", "src/labels.txt", "Path to file of labels, one per line")
 	flag.Parse()
 
-	if *modeldir == "" || *jpgfile == "" {
+	if *filename == "" || *jpgfile == "" {
 		flag.Usage()
 		return
 	}
 
 	LoadLabels(*labelfile)
 
-	modelpath := filepath.Join(*modeldir, "ADD FILE NAME HERE")
+	modelpath := filepath.Join(modeldir, *filename, "saved_model.pb")
 	model, err := ioutil.ReadFile(modelpath)
 	if err != nil {
 		log.Fatal(err)
