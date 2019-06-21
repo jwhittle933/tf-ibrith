@@ -26,9 +26,3 @@
 25: sin
 26: shin
 27: tav
-28: hebrew-manuscript
-29: manuscript-leaf
-30: hebrew-line
-31: hebrew-word
-32: word-space
-33: line-space
