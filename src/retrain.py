@@ -1160,9 +1160,10 @@ def main(_):
     if FLAGS.saved_model_dir:
       export_model(module_spec, class_count, FLAGS.saved_model_dir)
 
+    # Save model for freezing
     saver = tf.train.Saver()
     saver.save(sess, '{}/model.ckpt'.format(FLAGS.saved_model_dir))
-    tf.train.write_graph(sess.graph.as_graph_def(), '.', 'model.pbtxt', as_text=True)
+    tf.train.write_graph(sess.graph.as_graph_def(), FLAGS.saved_model_dir, 'model.pbtxt', as_text=True)
 
 
 if __name__ == '__main__':
