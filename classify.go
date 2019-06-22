@@ -12,7 +12,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
+	// "path/filepath"
 	"time"
 
 	"golang.org/x/image/colornames"
@@ -155,23 +155,24 @@ func main() {
 
 	outputfile := fmt.Sprintf("%v-%v-%v|%v:%v:%v.jpg", month, day, year, hour, min, sec)
 
-	modeldir := "src/saved_models"
-	filename := flag.String("dir", "", "Filename in date format.")
+	// modeldir := "src/saved_models"
+	dir := flag.String("dir", "", "Filename in date format in src/saved_models.")
 	jpgfile := flag.String("jpg", "", "Path to a JPG image used for input")
 	outjpg := flag.String("out", outputfile, "Path of output JPG for displaying labels. Default is month-day-year|hour:min:sec.jpg")
 	labelfile := flag.String("labels", "src/labels.txt", "Path to file of labels, one per line")
 	flag.Parse()
 
-	if *filename == "" || *jpgfile == "" {
+	if *dir == "" || *jpgfile == "" {
 		flag.Usage()
 		return
 	}
 
 	LoadLabels(*labelfile)
 
-	modelpath := filepath.Join(modeldir, *filename, "saved_model.pb")
-	model, err := ioutil.ReadFile(modelpath)
+	// modelpath := filepath.Join(modeldir, *dir, "saved_model.pb")
+	model, err := ioutil.ReadFile("src/saved_models/test/saved_model.pb")
 	if err != nil {
+		fmt.Println("Bad model path")
 		log.Fatal(err)
 	}
 
