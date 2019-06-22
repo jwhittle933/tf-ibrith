@@ -130,6 +130,7 @@ import sys
 import numpy as np
 import tensorflow as tf
 import tensorflow_hub as hub
+from tensorflow.python.tools import freeze_graph
 
 FLAGS = None
 
@@ -987,6 +988,58 @@ def logging_level_verbosity(logging_verbosity):
                        (str(e), list(name_to_level)))
 
 
+# freeze_session hack method around tf.freeze_graph
+def freeze_session(session, keep_var=None, output_names=None, clear_devices=True):
+  graph = session.graph
+  with graph.as_default():
+    freeze_var_names = list(set(v.op.name for v in tf.global_variables()).difference(keep_var_name or []))
+    output_names = output_names or []
+    output_names += [v.op.name for v in tf.global_variables()]
+    input_graph_def = graph.as_graph_def()
+    if clear_devices:
+      for node in input_graph_def.node:
+        node.device = ""
+    frozen_graph = tf.graph_util.convert_variables_to_constants(
+      session, input_graph_def, output_names, freeze_var_names
+    )
+    return frozen_graph
+
+# freeze_graph hack method around tf.freeze_graph
+def freeze_graph(model_dir, output_node_names):
+  if not tf.gfile.Exists(model_dir):
+    raise AssertionError(
+      "Export directory does not exist. Please specify an export "
+      "directory: %s" % model_dir
+    )
+  if not output_node_names:
+    print("You need to supply the name of a node")
+    return -1
+
+  checkpoint = tf.train.get_checkpoint_state(model_dir)
+  input_checkpoint = checkpoint.model_checkpoint_path
+
+  absolute_model_dir = "/".join(input_checkpoint.split('/')[:-1])
+  output_graph = absolute_model_dir + "/frozen_model.pb"
+
+  clear_devices = True
+
+  with tf.Session(graph=tf.Graph()) as sess:
+    saver = tf.train.import_meta_graph(input_checkpoint + ".meta", clear_devices=clear_devices)
+    saver.restore(sess, input_checkpoint)
+
+    output_graph_def = tf.graph_util.convert_variables_to_constants(
+      sess,
+      tf.get_default_graph().as_graph_def(),
+      output_node_names.split(",")
+    )
+
+    with tf.gfile.GFile(output_graph, "wb") as f:
+      f.write(output_graph_def.SerializeToString())
+    print("%d ops in the final graph" % len(output_graph_def.node))
+
+  return output_graph_def
+
+
 def main(_):
   # Needed to make sure the logging output is visible.
   # See https://github.com/tensorflow/tensorflow/issues/3047
@@ -1164,6 +1217,19 @@ def main(_):
     saver = tf.train.Saver()
     saver.save(sess, '{}/model.ckpt'.format(FLAGS.saved_model_dir))
     tf.train.write_graph(sess.graph.as_graph_def(), FLAGS.saved_model_dir, 'model.pbtxt', as_text=True)
+
+    # TF Freeze graph
+    # freeze_graph.freeze_graph(
+    #   "%s/model.pbtxt" % FLAGS.saved_model_dir, "", False,
+    #   "%s/model.ckpt" % FLAGS.saved_model_dir, "output/Softmax",
+    #   "save/restore_all", "save/Const:0",
+    #   "frozen_graph.pb", True, ""
+    # )
+
+    # frozen_graph = freeze_session(sess)
+    # tf.train.write_graph(frozen_graph, FLAGS.saved_model_dir, "frozen_model.pb", as_text=False)
+
+    freeze_graph(FLAGS.saved_model_dir, "final_result")
 
 
 if __name__ == '__main__':
